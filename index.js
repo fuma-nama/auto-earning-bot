@@ -80,7 +80,7 @@ async function runActions() {
     await c.sendTyping();
     await c.send(action.text);
     //timeout
-    await new Promise((r) => setTimeout(r, 5000));
+    await new Promise((r) => setTimeout(r, 3000));
   }
 
   await dumpCD();
@@ -144,9 +144,7 @@ function parseSeconds(text) {
 async function checkInfo() {
   const c = await client.channels.fetch(channel);
 
-  setInterval(() => {
-    c.send(".bal");
-  }, 1000 * 60);
+  await c.send(".bal");
 }
 
 const Handlers = {
