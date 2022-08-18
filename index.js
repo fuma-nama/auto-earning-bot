@@ -40,28 +40,15 @@ client.on("messageCreate", async (event) => {
   );
   if (!embed) return;
 
-  const field = embed.fields.find((f) => f.name === "Server Cooldowns");
-  if (!field) return;
-
-  console.log(`New Cooldowns ${field.value}`);
-
-  const cooldowns = field.value.split("\n").map((v) => parseCoolDown(v));
-
-  for (const { action: text, time } of cooldowns) {
-    const action = actions.find((a) => a.text === text);
-    if (!action) {
-      console.log(`Unknown Action ${action}`);
-      continue;
-    }
-
-    const now = new Date(Date.now());
-    const cd = now.setSeconds(now.getSeconds() + time);
-
-    console.log(`${action.text} ${cd}s`);
-    action.cd = cd;
+  const cd = embed.fields.find((f) => f.name === "Server Cooldowns");
+  if (cd) {
+    Handlers.handleCD(cd);
   }
 
-  runActions();
+  const bal = embed.fields.find((f) => f.name === "Balance");
+  if (bal) {
+    Handlers.handleBel(bal);
+  }
 });
 
 client.login(process.env.TOKEN);
@@ -89,14 +76,15 @@ async function runActions() {
   for (const action of actions) {
     const cd = action.cd;
 
-    console.log(`Cd: ${cd}s, Now: ${Date.now()}s`);
     if (cd && cd > Date.now()) continue;
+    await c.sendTyping();
     await c.send(action.text);
     //timeout
     await new Promise((r) => setTimeout(r, 5000));
   }
 
   await dumpCD();
+  await checkInfo();
 }
 
 /**
@@ -122,6 +110,9 @@ function parseCoolDown(line) {
  * @return {number} seconds
  */
 function parseSeconds(text) {
+  //Ignore if text is null
+  if (text == null) return Date.now();
+
   if (text === "a few seconds") return 15; //no one knows how "a few seconds" long
 
   let [value, unit] = text.split(" ");
@@ -149,3 +140,44 @@ function parseSeconds(text) {
 
   return value;
 }
+
+async function checkInfo() {
+  const c = await client.channels.fetch(channel);
+
+  setInterval(() => {
+    c.send(".bal");
+  }, 1000 * 60);
+}
+
+const Handlers = {
+  handleCD(field) {
+    console.log("Cooldowns Updated");
+
+    const cooldowns = field.value.split("\n").map((v) => parseCoolDown(v));
+
+    for (const { action: text, time } of cooldowns) {
+      const action = actions.find((a) => a.text === text);
+      if (!action) {
+        console.log(`Unknown Action ${action}`);
+        continue;
+      }
+
+      const now = new Date(Date.now());
+      const cd = now.setSeconds(now.getSeconds() + time);
+
+      action.cd = cd;
+    }
+
+    runActions();
+  },
+  /**
+   *
+   * @param {EmbedField} field
+   */
+  handleBel(field) {
+    //星星 000
+    const [stars] = field.value.split("\n");
+
+    console.log(new Date(Date.now()).toLocaleTimeString(), stars);
+  },
+};
