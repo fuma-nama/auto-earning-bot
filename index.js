@@ -18,6 +18,7 @@ const actions = [
   "打掃小屋",
   "裝水",
   "簽到",
+  "陪伴葵看星星",
 ].map((action) => ({
   text: action,
   cd: null,
